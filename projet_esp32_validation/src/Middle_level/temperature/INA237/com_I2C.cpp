@@ -1,0 +1,1 @@
+/*Initialisation de la com I2C*/

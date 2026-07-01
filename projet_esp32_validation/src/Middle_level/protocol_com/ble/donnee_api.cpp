@@ -1,0 +1,1 @@
+/*Récupération et envoie des données pour envoie à l’API par bluetooth*/

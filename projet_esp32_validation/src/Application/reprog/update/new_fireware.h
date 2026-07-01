@@ -1,0 +1,1 @@
+/*Récupération de la mise à jour sur l’API*/

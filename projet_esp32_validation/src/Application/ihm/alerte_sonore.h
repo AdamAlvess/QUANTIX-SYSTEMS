@@ -1,0 +1,1 @@
+/*Fonction alerte sonore pour avertissement et un autre pour critique*/

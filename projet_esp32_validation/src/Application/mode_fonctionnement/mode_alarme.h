@@ -1,0 +1,1 @@
+/*Passage en mode alarme*/

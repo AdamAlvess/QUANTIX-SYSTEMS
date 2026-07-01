@@ -1,0 +1,1 @@
+/*Récupération de la donnée de température brute et traitement de la donnée*/
