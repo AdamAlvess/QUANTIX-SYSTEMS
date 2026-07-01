@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Quantix Systems - Console de Maintenance</title>
+    <style>
+        /* Fond de la page et la police */
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background-color: #1e293b;
+            color: #f8fafc; 
+            margin: 0;
+            padding: 40px;
+        }
+        
+        h1 { 
+            color: #38bdf8;
+            border-bottom: 2px solid #334155;
+            padding-bottom: 15px;
+        }
+
+        /* Le style des blocs (cartes) */
+        .card { 
+            background: #0f172a; /* Fond de carte */
+            border: 1px solid #1e293b;
+            padding: 25px; 
+            border-radius: 12px; /* Bords arrondis */
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); 
+            margin-bottom: 25px; 
+            max-width: 600px; 
+        }
+
+        h3 { margin-top: 0; color: #94a3b8; }
+
+        /* Boutons personnalisés */
+        .btn { 
+            background-color: #38bdf8; 
+            color: #0f172a; 
+            font-weight: bold;
+            border: none; 
+            padding: 12px 20px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 15px;
+            transition: all 0.2s ease; /* Animation fluide au survol */
+        }
+        .btn:hover { 
+            background-color: #0ea5e9; 
+            transform: translateY(-2px); /* Léger effet de surélévation */
+        }
+
+        /* Affichage des grandes valeurs de capteurs */
+        .value { 
+            font-size: 36px; 
+            font-weight: bold; 
+            color: #4ade80; /* Mesures */
+            margin-top: 15px; 
+            font-family: 'Courier New', Courier, monospace; /* Style écran LCD */
+        }
+    </style>
+</head>
+<body>
+    <h1>🛠️ QUANTIX SYSTEMS — Espace Maintenance AGV</h1>
+    
+    <div class="card">
+        <h3>🔗 Statut de la Liaison sans fil (BLE)</h3>
+        <button class="btn" onclick="connectAGV()">Initialiser la connexion</button>
+        <div id="status" style="margin-top:15px; color: #cbd5e1;">Statut : Déconnecté</div>
+    </div>
+
+    <div class="card">
+        <h3>📊 Télémétrie Capteurs (EXF-19)</h3>
+        <button class="btn" onclick="refreshData()">Interroger la carte</button>
+        <div class="value" id="current_val">-- A</div>
+        <div id="temp_val" style="margin-top: 15px; color: #94a3b8; font-size: 16px;">
+            PCB: --°C | Ambiant (TMP126): --°C
+        </div>
+    </div>
+
+    <script>
+        async function connectAGV() {
+            document.getElementById('status').innerText = "🔄 Recherche et connexion...";
+            let response = await fetch('/api/connect');
+            let data = await response.json();
+            document.getElementById('status').innerText = data.status;
+        }
+
+        async function refreshData() {
+            let response = await fetch('/api/data');
+            let data = await response.json();
+            if(data.error) { alert(data.error); return; }
+            document.getElementById('current_val').innerText = data.current.toFixed(2) + " A";
+            document.getElementById('temp_val').innerText = `PCB: ${data.temperatures.ntc_pcb_1}°C | Châssis (TMP126): ${data.temperatures.ambient_chassis}°C`;
+        }
+    </script>
+</body>
+</html>
