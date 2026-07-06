@@ -1,8 +1,8 @@
 #include <Arduino.h>
+#include "Middle_level/protocol_com/ble/donnee_api.h"
 #include "Middle_level/temperature/TMP126/recup_donnee.h"
 #include "Application/mode_fonctionnement/mode_maintenance.h"
-#include "Middle_level/composant_interne/led.h"
-#include "Middle_level/protocol_com/ble/donnee_api.h"
+#include "Middle_level/composant_interne/led.h" // Pour initialiser tes objets LED
 
 TMP126 capteurTemp126;
 

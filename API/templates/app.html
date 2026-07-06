@@ -1,30 +1,30 @@
-<!DOCTYPE html>
+<!DOCT<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <title>Quantix Systems - Console de Maintenance</title>
     <style>
-        /* Fond de la page et la police */
         body { 
             font-family: 'Segoe UI', Arial, sans-serif; 
             background-color: #1e293b;
             color: #f8fafc; 
             margin: 0;
             padding: 40px;
+            position: relative; /* Nécessaire pour le badge absolu */
         }
         
         h1 { 
             color: #38bdf8;
             border-bottom: 2px solid #334155;
             padding-bottom: 15px;
+            max-width: 600px;
         }
 
-        /* Le style des blocs (cartes) */
         .card { 
-            background: #0f172a; /* Fond de carte */
+            background: #0f172a; 
             border: 1px solid #1e293b;
             padding: 25px; 
-            border-radius: 12px; /* Bords arrondis */
+            border-radius: 12px; 
             box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); 
             margin-bottom: 25px; 
             max-width: 600px; 
@@ -32,7 +32,6 @@
 
         h3 { margin-top: 0; color: #94a3b8; }
 
-        /* Boutons personnalisés */
         .btn { 
             background-color: #38bdf8; 
             color: #0f172a; 
@@ -42,24 +41,53 @@
             border-radius: 8px; 
             cursor: pointer; 
             font-size: 15px;
-            transition: all 0.2s ease; /* Animation fluide au survol */
+            transition: all 0.2s ease; 
         }
+        
         .btn:hover { 
             background-color: #0ea5e9; 
-            transform: translateY(-2px); /* Léger effet de surélévation */
+            transform: translateY(-2px); 
         }
 
-        /* Affichage des grandes valeurs de capteurs */
         .value { 
             font-size: 36px; 
             font-weight: bold; 
-            color: #4ade80; /* Mesures */
+            color: #4ade80; 
             margin-top: 15px; 
-            font-family: 'Courier New', Courier, monospace; /* Style écran LCD */
+            font-family: 'Courier New', Courier, monospace; 
         }
+
+        /* --- STYLES DU BADGE DE MODE EN HAUT A DROITE --- */
+        .status-badge {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            padding: 10px 22px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.4s ease;
+        }
+
+        /* Couleurs modernes Tailwind */
+        .mode-nominal { background-color: #10b981; color: #022c22; } /* Vert émeraude */
+        .mode-maintenance { background-color: #f59e0b; color: #451a03; } /* Ambre/Orange */
+        .mode-alarme { background-color: #ef4444; color: #450a0a; } /* Rouge vif */
+        .mode-inconnu { background-color: #475569; color: #f8fafc; } /* Gris neutre */
+
     </style>
 </head>
 <body>
+    
+    <div id="mode_badge" class="status-badge mode-inconnu">
+        <span id="mode_icon">❓</span> 
+        <span id="mode_text">En attente de connexion...</span>
+    </div>
+
     <h1>🛠️ QUANTIX SYSTEMS — Espace Maintenance AGV</h1>
     
     <div class="card">
@@ -80,17 +108,57 @@
     <script>
         async function connectAGV() {
             document.getElementById('status').innerText = "🔄 Recherche et connexion...";
-            let response = await fetch('/api/connect');
-            let data = await response.json();
-            document.getElementById('status').innerText = data.status;
+            try {
+                let response = await fetch('/api/connect');
+                let data = await response.json();
+                document.getElementById('status').innerText = data.status;
+            } catch (e) {
+                document.getElementById('status').innerText = "❌ Erreur serveur Web";
+            }
         }
 
         async function refreshData() {
-            let response = await fetch('/api/data');
-            let data = await response.json();
-            if(data.error) { alert(data.error); return; }
-            document.getElementById('current_val').innerText = data.current.toFixed(2) + " A";
-            document.getElementById('temp_val').innerText = `PCB: ${data.temperatures.ntc_pcb_1}°C | Châssis (TMP126): ${data.temperatures.ambient_chassis}°C`;
+            try {
+                let response = await fetch('/api/data');
+                let data = await response.json();
+                
+                if(data.error) { 
+                    alert(data.error); 
+                    return; 
+                }
+                
+                // 1. Mise à jour des valeurs numériques
+                document.getElementById('current_val').innerText = data.current.toFixed(2) + " A";
+                document.getElementById('temp_val').innerText = `PCB: ${data.temperatures.ntc_pcb_1}°C | Châssis (TMP126): ${data.temperatures.ambient_chassis}°C`;
+
+                // 2. Mise à jour du badge de mode en haut à droite
+                const badge = document.getElementById('mode_badge');
+                const modeText = document.getElementById('mode_text');
+                const modeIcon = document.getElementById('mode_icon');
+
+                // Réinitialisation des classes CSS
+                badge.className = "status-badge"; 
+
+                // Application des bonnes couleurs selon le mode
+                if (data.mode === "Fonctionnement nominal") {
+                    badge.classList.add("mode-nominal");
+                    modeIcon.innerText = "✅";
+                } else if (data.mode === "Alarme") {
+                    badge.classList.add("mode-alarme");
+                    modeIcon.innerText = "🚨";
+                } else if (data.mode === "Maintenance") {
+                    badge.classList.add("mode-maintenance");
+                    modeIcon.innerText = "🛠️";
+                } else {
+                    badge.classList.add("mode-inconnu");
+                    modeIcon.innerText = "❓";
+                }
+                
+                modeText.innerText = data.mode;
+
+            } catch (e) {
+                alert("Erreur de connexion à l'API locale.");
+            }
         }
     </script>
 </body>
