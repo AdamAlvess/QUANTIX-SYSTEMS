@@ -1,7 +1,8 @@
 #include "recup_donnee.h"
 
-RecupDonnee::RecupDonnee(uint8_t pin) 
-    : _adc(pin), _math(10000.0, 10000.0, 3950.0), _diagnostic(-10.0, 85.0) {}
+// On lui passe le pin de lecture (26) et d'alim (25)
+RecupDonnee::RecupDonnee(uint8_t pinLecture) 
+    : _adc(pinLecture, 25), _math(10000.0, 10000.0, 3950.0), _diagnostic(-10.0, 85.0) {}
 
 void RecupDonnee::begin() {
     _adc.begin();

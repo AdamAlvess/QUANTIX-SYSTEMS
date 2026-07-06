@@ -5,10 +5,12 @@
 
 class ComAdc {
 private:
-    uint8_t _pin;
+    uint8_t _pinLecture; // Ex: 26
+    uint8_t _pinAlim;    // Ex: 25
 
 public:
-    ComAdc(uint8_t pin);
+    // Le constructeur prend maintenant les deux pins
+    ComAdc(uint8_t pinLecture, uint8_t pinAlim);
     void begin();
     int lireBrut();
 };
