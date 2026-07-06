@@ -1,6 +1,6 @@
 /**
  * ╔══════════════════════════════════════════════════════════╗
- * ║   ESP32-PICO-D4 – Carte de développement YNOV 2026      ║
+ * ║   ESP32-PICO-D4 – Carte de développement YNOV 2026       ║
  * ║   Module : Initialisation & Sécurité du bus I2C          ║
  * ║   Composants : INA237AIDGST, connecteurs Grove           ║
  * ╚══════════════════════════════════════════════════════════╝
