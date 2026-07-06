@@ -1,0 +1,2 @@
+/*Passage en mode maintenance
+gerer automatiquement ou manuellement*/
