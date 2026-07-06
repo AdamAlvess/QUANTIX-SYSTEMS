@@ -13,7 +13,7 @@ float RecupDonnee::obtenirTemperature() {
     
     // 1. Évaluation matérielle directe sur la valeur ADC brute
     if (_diagnostic.evaluerErreurMaterielle(brut) != SONDE_OK) {
-        return -999.0; // On coupe court, inutile de faire des maths sur une panne franche
+        return -998.0; // On coupe court, inutile de faire des maths sur une panne franche
     }
     
     // 2. Conversion mathématique
@@ -21,7 +21,7 @@ float RecupDonnee::obtenirTemperature() {
     
     // 3. Évaluation logique de la température obtenue
     if (_diagnostic.evaluerErreurThermique(tempCalculee) != SONDE_OK) {
-        return -999.0;
+        return -997.0;
     }
     
     return tempCalculee; // Tout est vert !
