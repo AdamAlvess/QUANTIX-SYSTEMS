@@ -1,7 +1,7 @@
 #include <Arduino.h>
-#include "I2C_Init.h"
-#include "INA237_Temp.h"
-#include "I2C_Error.h"
+#include "Middle_level/temperature/INA237/I2C_Init.h"
+#include "Middle_level/temperature/INA237/INA237_Temp.h"
+#include "Middle_level/temperature/INA237/I2C_Error.h"
 
 static uint8_t  s_errCount = 0;
 static uint32_t s_lastMs   = 0;
