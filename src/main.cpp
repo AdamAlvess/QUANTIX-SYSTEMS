@@ -51,9 +51,11 @@ void loop() {
     }
 
     // 4. Si l'interface Quantix en Python se connecte, on lui envoie les données réelles
+    DonneeApi::updateMeasurements(courant_mesure, ntc_1, ntc_2, temp_amb_chassis);
+    
+    // Log optionnel pour savoir si un PC est connecté
     if (DonneeApi::isConnected()) {
-        DonneeApi::updateMeasurements(courant_mesure, ntc_1, ntc_2, temp_amb_chassis);
-        Serial.println("[BLE] Données envoyées à l'API !");
+        Serial.println("[BLE] Un client est connecté et reçoit les données !");
     }
 
     delay(1000); // Tâche exécutée toutes les secondes
