@@ -18,7 +18,7 @@ public:
 private:
     static bool _estActif;
     static unsigned long _dernierChangementLed;
-    static bool _phaseLedAlternée;
+    static bool _phaseLedAlternee;
 };
 
 #endif // MODE_MAINTENANCE_H

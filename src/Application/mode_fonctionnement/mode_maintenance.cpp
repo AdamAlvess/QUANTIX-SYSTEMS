@@ -3,7 +3,7 @@
 // Initialisation des variables statiques
 bool ModeMaintenance::_estActif = false;
 unsigned long ModeMaintenance::_dernierChangementLed = 0;
-bool ModeMaintenance::_phaseLedAlternée = false;
+bool ModeMaintenance::_phaseLedAlternee = false;
 
 bool ModeMaintenance::isActif() {
     return _estActif;
@@ -30,9 +30,9 @@ void ModeMaintenance::mettreAJourIhm() {
     unsigned long tempsActuel = millis();
     if (tempsActuel - _dernierChangementLed >= 500) {
         _dernierChangementLed = tempsActuel;
-        _phaseLedAlternée = !_phaseLedAlternée; // Inversion de la phase
+        _phaseLedAlternee = !_phaseLedAlternee; // Inversion de la phase
 
-        if (_phaseLedAlternée) {
+        if (_phaseLedAlternee) {
             maLedrouge.allumer();
             maLedverte.eteindre();
         } else {
