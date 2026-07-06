@@ -9,7 +9,7 @@ static uint32_t s_lastMs   = 0;
 void setup() {
     Serial.begin(115200);
     delay(200);
-    Serial.println("\n=== ESP32 – INA237 I2C ===\n");
+    Serial.println("\n=== ESP32 – INA237 Tension ===\n");
 
     if (!I2C_Init(SDA_PIN, SCL_PIN)) {
         Serial.println("[MAIN] Echec init – vérifier le câblage");
@@ -20,9 +20,9 @@ void loop() {
     if (millis() - s_lastMs < 1000) return;
     s_lastMs = millis();
 
-    float temp = INA237_ReadTemperature();
+    float voltage_mV = INA237_ReadVoltageFromTemp();
 
-    if (isnan(temp)) {
+    if (isnan(voltage_mV)) {
         s_errCount++;
         Serial.printf("[MAIN] Erreur #%d\n", s_errCount);
 
@@ -33,5 +33,6 @@ void loop() {
         }
     } else {
         s_errCount = 0;
+        Serial.printf("[MAIN] Tension = %.2f mV\n", voltage_mV);
     }
 }
