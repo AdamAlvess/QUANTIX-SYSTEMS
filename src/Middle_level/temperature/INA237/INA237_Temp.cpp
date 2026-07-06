@@ -20,7 +20,7 @@ float INA237_ReadTemperature() {
     }
 
     // Lecture 2 octets
-    uint8_t received = Wire.requestFrom((int)INA237_ADDR, 2, true);
+    uint8_t received = Wire.requestFrom((uint8_t)INA237_ADDR, (uint8_t)2);
     if (received != 2) {
         Serial.println("[INA237_Temp] Erreur : octets insuffisants");
         return NAN;
