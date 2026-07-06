@@ -83,15 +83,15 @@ void enregistrerSystemLog(const char* type_evt) {
 // Extraction des données (du plus ancien au plus récent)
 void extraireLogsMesures() {
     if (!mesuresBuffer || countMesures == 0) {
-        Serial.println("LOGS_MESURES_START:0");
-        Serial.println("LOGS_MESURES_END");
+        Serial.println("   [Mesures] : Aucun enregistrement disponible.");
         return;
     }
     
-    Serial.print("LOGS_MESURES_START:");
-    Serial.println(countMesures);
+    Serial.println("\n  >> HISTORIQUE DES MESURES PERIODIQUES (Toutes les 5s) :");
+    Serial.println("  -----------------------------------------------------------------");
+    Serial.println("  | Temps (s)  | Courant (A) | Temp Int (°C) | Temp Ext (°C) |");
+    Serial.println("  -----------------------------------------------------------------");
     
-    // Calcul de l'index du plus ancien élément
     int startIdx = 0;
     if (countMesures == MAX_MESURES) {
         startIdx = indexMesures;
@@ -99,27 +99,24 @@ void extraireLogsMesures() {
     
     for (int i = 0; i < countMesures; i++) {
         int idx = (startIdx + i) % MAX_MESURES;
-        Serial.print("MESURE:");
-        Serial.print(mesuresBuffer[idx].timestamp);
-        Serial.print(",");
-        Serial.print(mesuresBuffer[idx].courant);
-        Serial.print(",");
-        Serial.print(mesuresBuffer[idx].temp_int);
-        Serial.print(",");
-        Serial.println(mesuresBuffer[idx].temp_ext);
+        Serial.print("  | ");
+        if (mesuresBuffer[idx].timestamp < 10) Serial.print(" "); // Alignement visuel
+        Serial.print(mesuresBuffer[idx].timestamp);   Serial.print("s         | ");
+        Serial.print(mesuresBuffer[idx].courant);     Serial.print(" A       | ");
+        Serial.print(mesuresBuffer[idx].temp_int);    Serial.print(" °C       | ");
+        Serial.print(mesuresBuffer[idx].temp_ext);    Serial.println(" °C       |");
     }
-    Serial.println("LOGS_MESURES_END");
+    Serial.println("  -----------------------------------------------------------------");
 }
 
 void extraireLogsAlarmes() {
     if (!alarmesBuffer || countAlarmes == 0) {
-        Serial.println("LOGS_ALARMES_START:0");
-        Serial.println("LOGS_ALARMES_END");
+        Serial.println("   [Alarmes] : Aucune alarme enregistree.");
         return;
     }
     
-    Serial.print("LOGS_ALARMES_START:");
-    Serial.println(countAlarmes);
+    Serial.println("\n  >> JOURNAL DES ALARMES DECLENCHEES :");
+    Serial.println("  ---------------------------------------------------------------------------------");
     
     int startIdx = 0;
     if (countAlarmes == MAX_ALARMES) {
@@ -128,25 +125,23 @@ void extraireLogsAlarmes() {
     
     for (int i = 0; i < countAlarmes; i++) {
         int idx = (startIdx + i) % MAX_ALARMES;
-        Serial.print("ALARME:");
-        Serial.print(alarmesBuffer[idx].timestamp);
-        Serial.print(",");
+        Serial.print("  ["); Serial.print(alarmesBuffer[idx].timestamp); Serial.print("s] ALERT -> ");
         Serial.print(alarmesBuffer[idx].description);
-        Serial.print(",");
-        Serial.println(alarmesBuffer[idx].valeur);
+        Serial.print(" (Valeur lue : ");
+        Serial.print(alarmesBuffer[idx].valeur);
+        Serial.println(")");
     }
-    Serial.println("LOGS_ALARMES_END");
+    Serial.println("  ---------------------------------------------------------------------------------");
 }
 
 void extraireLogsSystem() {
     if (!systemLogsBuffer || countSystem == 0) {
-        Serial.println("LOGS_SYSTEM_START:0");
-        Serial.println("LOGS_SYSTEM_END");
+        Serial.println("   [Systeme] : Aucun evenement systeme.");
         return;
     }
     
-    Serial.print("LOGS_SYSTEM_START:");
-    Serial.println(countSystem);
+    Serial.println("\n  >> EVENEMENTS SYSTEME :");
+    Serial.println("  ---------------------------------------------------------------------------------");
     
     int startIdx = 0;
     if (countSystem == MAX_SYSTEM_LOGS) {
@@ -155,10 +150,8 @@ void extraireLogsSystem() {
     
     for (int i = 0; i < countSystem; i++) {
         int idx = (startIdx + i) % MAX_SYSTEM_LOGS;
-        Serial.print("SYSTEM:");
-        Serial.print(systemLogsBuffer[idx].timestamp);
-        Serial.print(",");
+        Serial.print("  ["); Serial.print(systemLogsBuffer[idx].timestamp); Serial.print("s] SYS_EVT : ");
         Serial.println(systemLogsBuffer[idx].type_evt);
     }
-    Serial.println("LOGS_SYSTEM_END");
+    Serial.println("  ---------------------------------------------------------------------------------");
 }
