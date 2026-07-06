@@ -10,6 +10,8 @@ void RecupDonnee::begin() {
 
 float RecupDonnee::obtenirTemperature() {
     int brut = _adc.lireBrut();
+
+    Serial.print("DEBUG ADC BRUT: "); Serial.println(brut);
     
     // 1. Évaluation matérielle directe sur la valeur ADC brute
     if (_diagnostic.evaluerErreurMaterielle(brut) != SONDE_OK) {
