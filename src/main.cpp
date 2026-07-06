@@ -1,20 +1,37 @@
 #include <Arduino.h>
+#include "I2C_Init.h"
+#include "INA237_Temp.h"
+#include "I2C_Error.h"
 
-// put function declarations here:
-int myFunction(int, int);
+static uint8_t  s_errCount = 0;
+static uint32_t s_lastMs   = 0;
 
 void setup() {
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+    Serial.begin(115200);
+    delay(200);
+    Serial.println("\n=== ESP32 – INA237 I2C ===\n");
+
+    if (!I2C_Init(SDA_PIN, SCL_PIN)) {
+        Serial.println("[MAIN] Echec init – vérifier le câblage");
+    }
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-}
+    if (millis() - s_lastMs < 1000) return;
+    s_lastMs = millis();
 
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
-}
+    float temp = INA237_ReadTemperature();
 
-// nom esp32 "AGV_MONITOR_ESP32"
+    if (isnan(temp)) {
+        s_errCount++;
+        Serial.printf("[MAIN] Erreur #%d\n", s_errCount);
+
+        if (s_errCount >= 5) {
+            Serial.println("[MAIN] Trop d'erreurs → recovery");
+            I2C_Recover(SDA_PIN, SCL_PIN);
+            s_errCount = 0;
+        }
+    } else {
+        s_errCount = 0;
+    }
+}
