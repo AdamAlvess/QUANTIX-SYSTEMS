@@ -1,1 +1,0 @@
-/*Gestion des erreurs de communication*/
