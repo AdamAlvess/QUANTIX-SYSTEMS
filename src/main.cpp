@@ -1,7 +1,7 @@
 #include "Middle_level/temperature/sonde_ctn/recup_donnee.h"
 
-// Instance globale de ton capteur sur le pin 34
-RecupDonnee capteurTempExt(34);
+// Instance globale de ton capteur sur le pin 26
+RecupDonnee capteurTempExt(26);
 
 void setup() {
   Serial.begin(115200);
@@ -12,7 +12,7 @@ void setup() {
 void loop() {
   // Dans ton bloc de lecture de capteur physique :
   float vraie_temp_ext = capteurTempExt.obtenirTemperature();
-  Serial.println(vraie_temp_ext);
+  Serial.print("TempExt Finale : "); Serial.println(vraie_temp_ext);
   delay(1000);
   
   

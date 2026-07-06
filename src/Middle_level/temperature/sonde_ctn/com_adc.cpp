@@ -1,18 +1,18 @@
 #include "com_adc.h"
 
+// Nouveau constructeur simplifié pour le test
 ComAdc::ComAdc(uint8_t pinLecture, uint8_t pinAlim) 
     : _pinLecture(pinLecture), _pinAlim(pinAlim) {}
 
 void ComAdc::begin() {
+    // On configure le pin de lecture
     pinMode(_pinLecture, INPUT);
-    pinMode(_pinAlim, OUTPUT);
-    digitalWrite(_pinAlim, LOW); // Éteint par défaut pour économiser l'énergie
+    analogSetPinAttenuation(_pinLecture, ADC_11db);
+    
+    // On ne touche PAS au pin 25 au cas où c'est la deuxième sonde !
 }
 
 int ComAdc::lireBrut() {
-    digitalWrite(_pinAlim, HIGH); // On alimente le pont diviseur juste pour la mesure
-    delayMicroseconds(20);        // On laisse la tension se stabiliser
-    int valeur = analogRead(_pinLecture);
-    digitalWrite(_pinAlim, LOW);  // On rééteint
-    return valeur;
+    // Lecture directe (le pont diviseur est supposé alimenté par la carte)
+    return analogRead(_pinLecture);
 }
