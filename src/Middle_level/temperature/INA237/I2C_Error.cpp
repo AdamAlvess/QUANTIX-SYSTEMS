@@ -36,7 +36,7 @@ bool I2C_Recover(uint8_t sda, uint8_t scl) {
     digitalWrite(scl, HIGH); delayMicroseconds(5);
     digitalWrite(sda, HIGH); delayMicroseconds(5);
 
-    bool ok = I2C_Init(sda, scl);
+    bool ok = I2C_Init(sda, scl, 400000);
     Serial.printf("[I2C_Error] Recovery %s\n", ok ? "réussie" : "échouée");
     return ok;
 }
