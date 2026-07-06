@@ -43,9 +43,9 @@ void loop() {
 
     // Transmission à ton application Python via BLE
     if (DonneeApi::isConnected()) {
-        // Optionnel : tu passes ici ton nouvel état de maintenance à ton API BLE
         DonneeApi::updateMeasurements(courant_mesure, ntc_1, ntc_2, temp_amb_chassis);
+        Serial.println("[BLE] Données envoyées à l'API !");
     }
 
-    delay(50); // Petit délai court pour garder le loop fluide et réactif
+    delay(1000); // Petit délai court pour garder le loop fluide et réactif
 }
