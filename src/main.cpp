@@ -13,6 +13,7 @@ void loop() {
   // Dans ton bloc de lecture de capteur physique :
   float vraie_temp_ext = capteurTempExt.obtenirTemperature();
   Serial.println(vraie_temp_ext);
+  delay(1000);
   
   
   // ... le reste de ton loop qui traite l'automate de test et les alarmes
