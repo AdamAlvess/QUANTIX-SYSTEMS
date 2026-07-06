@@ -13,6 +13,7 @@ CHAR_TEMPERATURES_UUID   = "c2c95358-0001-447a-9cb8-b0bf0a133401" # Lecture / No
 # Service Configuration / Maintenance
 SERVICE_CONFIG_UUID     = "e320d750-2bc4-41d1-8d2b-58d7dc5b49cb"
 CHAR_ALARM_THRESHOLDS_UUID = "d195e634-1102-4bf5-bc65-02b80a133402" # Lecture / Ecriture
+CHAR_MODE_UUID = "d205e634-1102-4bf5-bc65-02b80a133403"
 
 
 class AgvMonitoringAPI:
@@ -69,6 +70,17 @@ class AgvMonitoringAPI:
             "ntc_pcb_2": ntc2,
             "ambient_chassis": temp_amb
         }
+    
+    async def read_mode(self) -> int:
+        """Lit le mode : 0=Nominal, 1=Maintenance, 2=Alarme."""
+        if not self.client.is_connected: return 1
+        try:
+            raw_data = await self.client.read_gatt_char(CHAR_MODE_UUID)
+            # Lecture d'un entier sur 1 octet (B = unsigned char)
+            return struct.unpack('B', raw_data)[0]
+        except Exception:
+            # Sécurité : Si l'UUID n'est pas encore codé sur l'ESP32, on force "Maintenance"
+            return 1
 
     # ----------------------------------------------------
     # FONCTIONS D'ÉCRITURE (EXF-23)
