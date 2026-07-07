@@ -110,6 +110,20 @@ class AgvMonitoringAPI:
         await self.client.start_notify(CHAR_CURRENT_UUID, self._current_notification_handler)
         print("🔔 Notifications de courant activées.")
 
+    # ------------------------------------------------------------
+    # DEMANDE DE CHANGEMENT DE MODE DE FONCTIONEMENT DE LA CARTE
+    # ------------------------------------------------------------
+
+    async def write_mode(self, mode_code: int):
+     """Envoie l'ordre à l'ESP32 de changer son mode (0 = Nominal, 1 = Maintenance)."""
+     if not self.client or not self.client.is_connected: 
+         raise Exception("Carte non connectée en Bluetooth")
+
+     print(f"⚙️ Envoi de la demande de mode : {mode_code}")
+     # Convertit l'entier en 1 octet (format 'B' pour un entier non signé de 8 bits)
+     payload = struct.pack('B', mode_code)
+     await self.client.write_gatt_char(CHAR_MODE_UUID, payload, response=True)
+     print("✅ Ordre de changement de mode transmis avec succès.")
 
 # ==========================================
 # EXEMPLE DE SCÉNARIO D'UTILISATION (MAIN)

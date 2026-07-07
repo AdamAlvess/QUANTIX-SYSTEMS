@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, request
 import asyncio
 from API import AgvMonitoringAPI
 
@@ -55,6 +55,30 @@ def get_data():
         
     except Exception as e:
         return jsonify({"error": f"Erreur BLE : {str(e)}"}), 500
+
+@app.route('/api/change_mode')
+def change_mode():
+    # Sécurité : Vérifie si la carte est connectée
+    if not agv_api.client or not agv_api.client.is_connected:
+        return jsonify({"error": "Impossible de changer le mode. La carte n'est pas connectée en Bluetooth."}), 400
+
+    # Récupération du mode demandé dans l'URL (?mode=0 ou ?mode=1)
+    target_mode = request.args.get('mode', type=int)
+    
+    if target_mode not in [0, 1]:
+        return jsonify({"error": "Code mode invalide."}), 400
+
+    try:
+        # Exécution de la commande BLE asynchrone
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(agv_api.write_mode(target_mode))
+        
+        mode_nom = "Nominal" if target_mode == 0 else "Maintenance"
+        return jsonify({"status": f"Demande de passage en mode {mode_nom} envoyée à l'ESP32 !"})
+        
+    except Exception as e:
+        return jsonify({"error": f"Erreur lors de l'envoi BLE : {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

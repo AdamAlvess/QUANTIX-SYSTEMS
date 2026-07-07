@@ -93,6 +93,15 @@
     <div class="card">
         <h3>🔗 Statut de la Liaison sans fil (BLE)</h3>
         <button class="btn" onclick="connectAGV()">Initialiser la connexion</button>
+        
+        <div style="margin-top: 15px;">
+            <label for="mode-select" style="color: #94a3b8; font-weight: bold; display: block; margin-bottom: 5px;">🔧 Demande de changement de mode :</label>
+            <select id="mode-select" onchange="changeAGVMode()" style="background-color: #1e293b; color: #f8fafc; border: 1px solid #334155; padding: 8px; border-radius: 6px; width: 100%; font-size: 14px; cursor: pointer;">
+                <option value="1">Maintenance (Défaut)</option>
+                <option value="0">Fonctionnement nominal</option>
+            </select>
+        </div>
+
         <div id="status" style="margin-top:15px; color: #cbd5e1;">Statut : Déconnecté</div>
     </div>
 
@@ -159,7 +168,20 @@
             } catch (e) {
                 alert("Erreur de connexion à l'API locale.");
             }
+        }async function changeAGVMode() {
+            let selectElement = document.getElementById('mode-select');
+            let selectedMode = selectElement.value; // Récupère 0 ou 1
+
+            let response = await fetch(`/api/change_mode?mode=${selectedMode}`);
+            let data = await response.json();
+            
+            if (data.error) {
+                alert("❌ " + data.error);
+            } else {
+                alert("💾 " + data.status);
+            }
         }
+
     </script>
 </body>
 </html>
