@@ -53,7 +53,8 @@ class AgvMonitoringAPI:
     # ----------------------------------------------------
     async def read_current(self) -> float:
         """Lit le courant de la batterie 36V transmis par l'INA237."""
-        if not self.client.is_connected: return 0.0
+        if not self.client.is_connected:
+            return 0.0
         raw_data = await self.client.read_gatt_char(CHAR_CURRENT_UUID)
         # Supposons que l'ESP32 envoie un float (4 octets)
         current = struct.unpack('f', raw_data)[0]
@@ -61,7 +62,8 @@ class AgvMonitoringAPI:
 
     async def read_temperatures(self) -> dict:
         """Lit les données thermiques (2 NTC internes + 1 TMP126 ambiante)."""
-        if not self.client.is_connected: return {}
+        if not self.client.is_connected:
+            return {}
         raw_data = await self.client.read_gatt_char(CHAR_TEMPERATURES_UUID)
         # Supposons que l'ESP32 envoie 3 floats : ntc1, ntc2, temp_amb (12 octets)
         ntc1, ntc2, temp_amb = struct.unpack('fff', raw_data)
@@ -73,7 +75,8 @@ class AgvMonitoringAPI:
     
     async def read_mode(self) -> int:
         """Lit le mode : 0=Nominal, 1=Maintenance, 2=Alarme."""
-        if not self.client.is_connected: return 1
+        if not self.client.is_connected:
+            return 1
         try:
             raw_data = await self.client.read_gatt_char(CHAR_MODE_UUID)
             # Lecture d'un entier sur 1 octet (B = unsigned char)
@@ -87,7 +90,8 @@ class AgvMonitoringAPI:
     # ----------------------------------------------------
     async def update_alarm_thresholds(self, current_max: float, temp_max: float):
         """Permet au technicien d'ajuster les seuils d'alarme depuis sa tablette."""
-        if not self.client.is_connected: return
+        if not self.client.is_connected:
+            return
         print(f"💾 Envoi des nouveaux seuils : Courant Max = {current_max}A, Temp Max = {temp_max}°C")
         # Prépare les données au format binaire (2 floats = 8 octets)
         payload = struct.pack('ff', current_max, temp_max)
