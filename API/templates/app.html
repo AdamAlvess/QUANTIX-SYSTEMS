@@ -1,4 +1,4 @@
-<!DOCT<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -57,35 +57,42 @@
             font-family: 'Courier New', Courier, monospace; 
         }
 
-        /* --- STYLES DU BADGE DE MODE EN HAUT A DROITE --- */
-        .status-badge {
+        /* --- STYLES DU CONTAINEUR EN HAUT A DROITE --- */
+        .status-container {
             position: absolute;
             top: 40px;
             right: 40px;
-            padding: 10px 22px;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 15px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: all 0.4s ease;
+            border-radius: 20px;
+            overflow: hidden;
         }
 
-        /* Couleurs modernes Tailwind */
-        .mode-nominal { background-color: #10b981; color: #022c22; } /* Vert émeraude */
-        .mode-maintenance { background-color: #f59e0b; color: #451a03; } /* Ambre/Orange */
-        .mode-alarme { background-color: #ef4444; color: #450a0a; } /* Rouge vif */
-        .mode-inconnu { background-color: #475569; color: #f8fafc; } /* Gris neutre */
+        /* Menu déroulant stylisé sous forme de badge interactif permanent */
+        .mode-dropdown-badge {
+            background-color: #334155; 
+            color: #94a3b8; 
+            border: 2px solid #475569; 
+            padding: 8px 20px; 
+            border-radius: 20px; 
+            font-weight: bold; 
+            font-size: 14px; 
+            cursor: pointer; 
+            outline: none; 
+            appearance: none; 
+            -webkit-appearance: none;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
 
     </style>
 </head>
 <body>
     
-    <div id="mode_badge" class="status-badge mode-inconnu">
-        <span id="mode_icon">❓</span> 
-        <span id="mode_text">En attente de connexion...</span>
+    <div class="status-container">
+        <select id="global-mode-select" onchange="changeAGVMode()" class="mode-dropdown-badge">
+            <option value="1" selected>🔧 Mode Maintenance (Défaut)</option>
+            <option value="0">🟢 Fonctionnement Nominal</option>
+        </select>
     </div>
 
     <h1>🛠️ QUANTIX SYSTEMS — Espace Maintenance AGV</h1>
@@ -93,15 +100,6 @@
     <div class="card">
         <h3>🔗 Statut de la Liaison sans fil (BLE)</h3>
         <button class="btn" onclick="connectAGV()">Initialiser la connexion</button>
-        
-        <div style="margin-top: 15px;">
-            <label for="mode-select" style="color: #94a3b8; font-weight: bold; display: block; margin-bottom: 5px;">🔧 Demande de changement de mode :</label>
-            <select id="mode-select" onchange="changeAGVMode()" style="background-color: #1e293b; color: #f8fafc; border: 1px solid #334155; padding: 8px; border-radius: 6px; width: 100%; font-size: 14px; cursor: pointer;">
-                <option value="1">Maintenance (Défaut)</option>
-                <option value="0">Fonctionnement nominal</option>
-            </select>
-        </div>
-
         <div id="status" style="margin-top:15px; color: #cbd5e1;">Statut : Déconnecté</div>
     </div>
 
@@ -116,13 +114,27 @@
 
     <script>
         async function connectAGV() {
-            document.getElementById('status').innerText = "🔄 Recherche et connexion...";
+            let statusDiv = document.getElementById('status');
+            statusDiv.innerText = "🔄 Recherche et connexion...";
             try {
                 let response = await fetch('/api/connect');
                 let data = await response.json();
-                document.getElementById('status').innerText = data.status;
+                
+                if (response.ok) {
+                    statusDiv.innerText = "✅ Connecté à l'AGV";
+                    
+                    // Ajustement des couleurs pour montrer que la liaison est active
+                    let selectElement = document.getElementById('global-mode-select');
+                    if (selectElement.value === "1") {
+                        selectElement.style.backgroundColor = "#1e3a8a"; // Bleu actif
+                        selectElement.style.color = "#93c5fd";
+                        selectElement.style.border = "2px solid #2563eb";
+                    }
+                } else {
+                    statusDiv.innerText = data.status || "❌ Échec de la connexion";
+                }
             } catch (e) {
-                document.getElementById('status').innerText = "❌ Erreur serveur Web";
+                statusDiv.innerText = "❌ Erreur serveur Web";
             }
         }
 
@@ -140,48 +152,56 @@
                 document.getElementById('current_val').innerText = data.current.toFixed(2) + " A";
                 document.getElementById('temp_val').innerText = `PCB: ${data.temperatures.ntc_pcb_1}°C | Châssis (TMP126): ${data.temperatures.ambient_chassis}°C`;
 
-                // 2. Mise à jour du badge de mode en haut à droite
-                const badge = document.getElementById('mode_badge');
-                const modeText = document.getElementById('mode_text');
-                const modeIcon = document.getElementById('mode_icon');
-
-                // Réinitialisation des classes CSS
-                badge.className = "status-badge"; 
-
-                // Application des bonnes couleurs selon le mode
+                // 2. Synchronisation automatique de l'IHM si le mode a changé tout seul (ex: Alarme)
+                let selectElement = document.getElementById('global-mode-select');
                 if (data.mode === "Fonctionnement nominal") {
-                    badge.classList.add("mode-nominal");
-                    modeIcon.innerText = "✅";
-                } else if (data.mode === "Alarme") {
-                    badge.classList.add("mode-alarme");
-                    modeIcon.innerText = "🚨";
+                    selectElement.value = "0";
+                    selectElement.style.backgroundColor = "#166534"; // Vert
+                    selectElement.style.color = "#bbf7d0";
+                    selectElement.style.border = "2px solid #22c55e";
                 } else if (data.mode === "Maintenance") {
-                    badge.classList.add("mode-maintenance");
-                    modeIcon.innerText = "🛠️";
-                } else {
-                    badge.classList.add("mode-inconnu");
-                    modeIcon.innerText = "❓";
+                    selectElement.value = "1";
+                    selectElement.style.backgroundColor = "#1e3a8a"; // Bleu
+                    selectElement.style.color = "#93c5fd";
+                    selectElement.style.border = "2px solid #2563eb";
+                } else if (data.mode === "Alarme") {
+                    selectElement.style.backgroundColor = "#991b1b"; // Rouge Alarme
+                    selectElement.style.color = "#fee2e2";
+                    selectElement.style.border = "2px solid #ef4444";
                 }
-                
-                modeText.innerText = data.mode;
 
             } catch (e) {
                 alert("Erreur de connexion à l'API locale.");
             }
-        }async function changeAGVMode() {
-            let selectElement = document.getElementById('mode-select');
-            let selectedMode = selectElement.value; // Récupère 0 ou 1
-
-            let response = await fetch(`/api/change_mode?mode=${selectedMode}`);
-            let data = await response.json();
-            
-            if (data.error) {
-                alert("❌ " + data.error);
-            } else {
-                alert("💾 " + data.status);
-            }
         }
 
+        async function changeAGVMode() {
+            let selectElement = document.getElementById('global-mode-select');
+            let selectedMode = selectElement.value;
+
+            // Changement visuel immédiat de la couleur selon le choix utilisateur
+            if (selectedMode === "0") {
+                selectElement.style.backgroundColor = "#166534"; // Vert
+                selectElement.style.color = "#bbf7d0";
+                selectElement.style.border = "2px solid #22c55e";
+            } else {
+                selectElement.style.backgroundColor = "#1e3a8a"; // Bleu
+                selectElement.style.color = "#93c5fd";
+                selectElement.style.border = "2px solid #2563eb";
+            }
+
+            try {
+                let response = await fetch(`/api/change_mode?mode=${selectedMode}`);
+                let data = await response.json();
+                
+                if (data.error) {
+                    // Si pas connecté, l'API Flask renvoie l'erreur et on l'affiche proprement
+                    alert("⚠️ " + data.error);
+                }
+            } catch (error) {
+                alert("❌ Erreur de communication avec le serveur.");
+            }
+        }
     </script>
 </body>
 </html>
