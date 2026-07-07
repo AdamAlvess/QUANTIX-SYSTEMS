@@ -17,7 +17,26 @@
             color: #38bdf8;
             border-bottom: 2px solid #334155;
             padding-bottom: 15px;
+            max-width: 100%;
+            margin-bottom: 30px;
+        }
+
+        /* --- CONTENEUR FLEXIBLE POUR ALIGNER LES COLONNES --- */
+        .main-container {
+            display: flex;
+            gap: 30px;
+            max-width: 1300px;
+            align-items: flex-start;
+        }
+
+        .column-left {
+            flex: 1;
             max-width: 600px;
+        }
+
+        .column-right {
+            flex: 1;
+            max-width: 650px;
         }
 
         .card { 
@@ -27,7 +46,8 @@
             border-radius: 12px; 
             box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); 
             margin-bottom: 25px; 
-            max-width: 600px; 
+            width: 100%;
+            box-sizing: border-box;
         }
 
         h3 { margin-top: 0; color: #94a3b8; }
@@ -55,6 +75,50 @@
             color: #4ade80; 
             margin-top: 15px; 
             font-family: 'Courier New', Courier, monospace; 
+        }
+
+        /* --- STYLES DE LA LISTE D'ALARMES --- */
+        .alarm-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .alarm-item {
+            background-color: #1e293b;
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .alarm-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .alarm-title {
+            font-weight: bold;
+            color: #fee2e2;
+        }
+
+        .alarm-date {
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        .alarm-badge {
+            background-color: #991b1b;
+            color: #fca5a5;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
         }
 
         /* --- STYLES DU CONTAINEUR EN HAUT A DROITE --- */
@@ -97,19 +161,47 @@
 
     <h1>🛠️ QUANTIX SYSTEMS — Espace Maintenance AGV</h1>
     
-    <div class="card">
-        <h3>🔗 Statut de la Liaison sans fil (BLE)</h3>
-        <button class="btn" onclick="connectAGV()">Initialiser la connexion</button>
-        <div id="status" style="margin-top:15px; color: #cbd5e1;">Statut : Déconnecté</div>
-    </div>
+    <div class="main-container">
+        
+        <div class="column-left">
+            <div class="card">
+                <h3>🔗 Statut de la Liaison sans fil (BLE)</h3>
+                <button class="btn" onclick="connectAGV()">Initialiser la connexion</button>
+                <div id="status" style="margin-top:15px; color: #cbd5e1;">Statut : Déconnecté</div>
+            </div>
 
-    <div class="card">
-        <h3>📊 Télémétrie Capteurs (EXF-19)</h3>
-        <button class="btn" onclick="refreshData()">Interroger la carte</button>
-        <div class="value" id="current_val">-- A</div>
-        <div id="temp_val" style="margin-top: 15px; color: #94a3b8; font-size: 16px;">
-            PCB: --°C | Ambiant (TMP126): --°C
+            <div class="card">
+                <h3>📊 Télémétrie Capteurs (EXF-19)</h3>
+                <button class="btn" onclick="refreshData()">Interroger la carte</button>
+                <div class="value" id="current_val">-- A</div>
+                <div id="temp_val" style="margin-top: 15px; color: #94a3b8; font-size: 16px;">
+                    PCB: --°C | Ambiant (TMP126): --°C
+                </div>
+            </div>
         </div>
+
+        <div class="column-right">
+            <div class="card">
+                <h3>🚨 Historique des alarmes</h3>
+                <ul class="alarm-list">
+                    <li class="alarm-item">
+                        <div class="alarm-info">
+                            <span class="alarm-title">🔥 Surchauffe de la carte</span>
+                            <span class="alarm-date">07/07/2026 - 14:15:22</span>
+                        </div>
+                        <span class="alarm-badge">Critique</span>
+                    </li>
+                    <li class="alarm-item">
+                        <div class="alarm-info">
+                            <span class="alarm-title">⚡ Courant trop faible de la carte</span>
+                            <span class="alarm-date">07/07/2026 - 11:32:05</span>
+                        </div>
+                        <span class="alarm-badge">Alerte</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
     </div>
 
     <script>

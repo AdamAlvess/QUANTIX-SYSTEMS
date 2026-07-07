@@ -10,6 +10,9 @@
 static uint8_t  s_errCount = 0;
 static uint32_t s_lastMs   = 0;
 
+#define PIN_I2C_SDA 21
+#define PIN_I2C_SCL 22
+
 bool systemOk = false;
 
 
@@ -39,24 +42,30 @@ void loop() {
 
   }
 
+    float courant_mesure = 12.80;
+    float ntc_1 = 26.4;
+    float ntc_2 = 27.1;
+    float temp_amb_chassis = 22.5;
+
     if (millis() - s_lastMs < READ_INTERVAL_MS) return;
     s_lastMs = millis();
 
-    // ── Mesure courant ────────────────────────────────────
+  // ─── LECTURE INA237 COURANT ───
     INA237Measure measure;
-    if (INA237_Current_Read(measure)) {
+    bool inaOk = INA237_Current_Read(measure);
+    
+    if (inaOk) {
         s_errCount = 0;
         INA237_Current_Print(measure);
     } else {
         s_errCount++;
         Serial.printf("[MAIN] Erreur I2C #%d\n", s_errCount);
         if (s_errCount >= 5) {
-            Serial.println("[MAIN] Recovery...");
-            I2C_Recover(SDA_PIN, SCL_PIN);
+            Serial.println("[MAIN] Recovery I2C...");
+            I2C_Recover(PIN_I2C_SDA, PIN_I2C_SCL);
             INA237_Current_Init();
             s_errCount = 0;
         }
-        return;
     }
 
 
@@ -72,10 +81,10 @@ void loop() {
     // ─── 2. LECTURE TMP126 ───
     TMP126_Mesure mesureTMP; 
     TMP126_Erreur err = capteurTMP.lireMesure(mesureTMP); 
-    
+        
     if (err == TMP126_OK) {
-        Serial.printf("[TMP126] Température : %.2f °C\n", 
-                      mesureTMP.temperature_c);
+        temp_amb_chassis = mesureTMP.temperature_c;
+        Serial.printf("[TMP126] Température : %.2f °C\n", temp_amb_chassis);
     } else {
         Serial.printf("[TMP126] Erreur de lecture : %d\n", err);
     }
@@ -86,25 +95,20 @@ void loop() {
                   temp_ctn1, temp_ctn2, temp_ctn_max);
 
     Serial.println("═══════════════════════════════════════════");
+
+        // ─── ENVOI DES DONNÉES VIA BLE (QUANTIX) ───
+    if (DonneeApi::isConnected()) {
+        // On envoie le courant réel mesuré (ou 0.0 si la lecture a échoué)
+        float courant_envoi = inaOk ? measure.current_A : 0.0f;
+        DonneeApi::updateMeasurements(courant_envoi, temp_ctn1, temp_ctn2, temp_amb_chassis);
+    }
+
     delay(2000); 
+
 };
 
 
 
 
-void loop() {
-    // Exemples de valeurs (à remplacer plus tard par vos capteurs réels)
-    float courant_mesure = 12.80;
-    float ntc_1 = 26.4;
-    float ntc_2 = 27.1;
-    float temp_amb_chassis = 22.5;
-
-    // Si l'interface Quantix en Python se connecte, on lui envoie les données
-    if (DonneeApi::isConnected()) {
-        DonneeApi::updateMeasurements(courant_mesure, ntc_1, ntc_2, temp_amb_chassis);
-    }
-
-    delay(1000); // Tâche exécutée toutes les secondes
-}
 
 // nom esp32 "AGV_MONITOR_ESP32"

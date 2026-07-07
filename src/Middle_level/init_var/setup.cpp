@@ -4,7 +4,7 @@
 #include "Middle_level/temperature/INA237/INA237_Current.h"
 #include "Middle_level/temperature/INA237/I2C_Error.h"
 
-// Définition des broches I2C
+// Définition unique des broches I2C
 #define PIN_I2C_SDA 21
 #define PIN_I2C_SCL 22
 
@@ -26,13 +26,19 @@ bool system_init() {
     Serial.println("   DEMARRAGE DU SYSTEME : AUTO-TEST   ");
     Serial.println("═══════════════════════════════════════════");
 
-    // ─── ÉTAPE 1 : INA237 (I2C) ───
+    // ─── ÉTAPE 1 : INITIALISATION I2C & INA237 ───
     Serial.println("[CHECK] Initialisation du bus I2C & INA237...");
     if (!I2C_Init(PIN_I2C_SDA, PIN_I2C_SCL, 400000)) {
-        Serial.println("[ERREUR CRITIQUE] Echec de l'INA237 (I2C).");
+        Serial.println("[ERREUR CRITIQUE] Echec de l'initialisation du Bus I2C.");
         success = false;
     } else {
-        Serial.println("[ OK ] INA237 détecté et réinitialisé.");
+        // Si le bus I2C est OK, on init la config du INA237 courant
+        if (!INA237_Current_Init()) {
+            Serial.println("[ERREUR CRITIQUE] INA237 courant non détecté ou échec config.");
+            success = false;
+        } else {
+            Serial.println("[ OK ] INA237 courant détecté et configuré.");
+        }
     }
 
     Serial.println("-------------------------------------------");
@@ -62,20 +68,6 @@ bool system_init() {
         success = false;
     } else {
         Serial.println("[ OK ] Sondes CTN opérationnelles.");
-    }
-
-    Serial.println("\n=== ESP32 – INA237 Courant  ===\n");
-
-    
-    // Init I2C
-    if (!I2C_Init(SDA_PIN, SCL_PIN)) {
-        Serial.println("[MAIN] Echec init I2C");
-        return;
-    }
-
-    // Init INA237 mesure courant
-    if (!INA237_Current_Init()) {
-        Serial.println("[MAIN] Echec init INA237 courant");
     }
 
     // ─── VERDICT FINAL ───
