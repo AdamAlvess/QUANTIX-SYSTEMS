@@ -18,8 +18,8 @@
 //  Résistance shunt & courant max
 //  → À adapter selon votre PCB
 // ─────────────────────────────────────────────
-#define INA237_SHUNT_OHMS       0.01f    // 10 mΩ
-#define INA237_MAX_CURRENT_A    10.0f    // Courant max attendu
+#define INA237_SHUNT_OHMS       0.005f    // 5 mΩ
+#define INA237_MAX_CURRENT_A    3.3f    // Courant max attendu
 
 // LSB courant = MaxCurrent / 2^15
 #define INA237_CURRENT_LSB      (INA237_MAX_CURRENT_A / 32768.0f)
