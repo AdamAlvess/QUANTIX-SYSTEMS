@@ -12,7 +12,7 @@ float INA237_ReadVoltageFromTemp() {
     uint8_t err = Wire.endTransmission(false);
 
     if (err != 0) {
-        Serial.printf("[INA237_Temp] Erreur pointeur reg : %s\n",
+        Serial.printf("[INA237] Erreur pointeur reg : %s\n",
                       I2C_GetErrorStr(err));
         return NAN;
     }
@@ -33,8 +33,8 @@ float INA237_ReadVoltageFromTemp() {
     // Conversion température → tension en mV
     float voltage_mV = temp_C * TEMP_TO_VOLTAGE_FACTOR;
 
-    Serial.printf("[INA237_Temp] Temp : %.2f °C  →  Tension : %.2f mV\n",
-                  temp_C, voltage_mV);
+    Serial.printf("[INA237]  Tension : %.2f mV\n",
+                   voltage_mV);
 
     return voltage_mV;
 }
