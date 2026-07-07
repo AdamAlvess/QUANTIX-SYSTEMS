@@ -4,27 +4,27 @@
     <meta charset="UTF-8">
     <title>Quantix Systems - Console de Maintenance</title>
     <style>
-        /* Fond de la page et la police */
         body { 
             font-family: 'Segoe UI', Arial, sans-serif; 
             background-color: #1e293b;
             color: #f8fafc; 
             margin: 0;
             padding: 40px;
+            position: relative; /* Nécessaire pour le badge absolu */
         }
         
         h1 { 
             color: #38bdf8;
             border-bottom: 2px solid #334155;
             padding-bottom: 15px;
+            max-width: 600px;
         }
 
-        /* Le style des blocs (cartes) */
         .card { 
-            background: #0f172a; /* Fond de carte */
+            background: #0f172a; 
             border: 1px solid #1e293b;
             padding: 25px; 
-            border-radius: 12px; /* Bords arrondis */
+            border-radius: 12px; 
             box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); 
             margin-bottom: 25px; 
             max-width: 600px; 
@@ -32,7 +32,6 @@
 
         h3 { margin-top: 0; color: #94a3b8; }
 
-        /* Boutons personnalisés */
         .btn { 
             background-color: #38bdf8; 
             color: #0f172a; 
@@ -42,24 +41,60 @@
             border-radius: 8px; 
             cursor: pointer; 
             font-size: 15px;
-            transition: all 0.2s ease; /* Animation fluide au survol */
+            transition: all 0.2s ease; 
         }
+        
         .btn:hover { 
             background-color: #0ea5e9; 
-            transform: translateY(-2px); /* Léger effet de surélévation */
+            transform: translateY(-2px); 
         }
 
-        /* Affichage des grandes valeurs de capteurs */
         .value { 
             font-size: 36px; 
             font-weight: bold; 
-            color: #4ade80; /* Mesures */
+            color: #4ade80; 
             margin-top: 15px; 
-            font-family: 'Courier New', Courier, monospace; /* Style écran LCD */
+            font-family: 'Courier New', Courier, monospace; 
         }
+
+        /* --- STYLES DU CONTAINEUR EN HAUT A DROITE --- */
+        .status-container {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        /* Menu déroulant stylisé sous forme de badge interactif permanent */
+        .mode-dropdown-badge {
+            background-color: #334155; 
+            color: #94a3b8; 
+            border: 2px solid #475569; 
+            padding: 8px 20px; 
+            border-radius: 20px; 
+            font-weight: bold; 
+            font-size: 14px; 
+            cursor: pointer; 
+            outline: none; 
+            appearance: none; 
+            -webkit-appearance: none;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
     </style>
 </head>
 <body>
+    
+    <div class="status-container">
+        <select id="global-mode-select" onchange="changeAGVMode()" class="mode-dropdown-badge">
+            <option value="1" selected>🔧 Mode Maintenance (Défaut)</option>
+            <option value="0">🟢 Fonctionnement Nominal</option>
+        </select>
+    </div>
+
     <h1>🛠️ QUANTIX SYSTEMS — Espace Maintenance AGV</h1>
     
     <div class="card">
@@ -79,18 +114,93 @@
 
     <script>
         async function connectAGV() {
-            document.getElementById('status').innerText = "🔄 Recherche et connexion...";
-            let response = await fetch('/api/connect');
-            let data = await response.json();
-            document.getElementById('status').innerText = data.status;
+            let statusDiv = document.getElementById('status');
+            statusDiv.innerText = "🔄 Recherche et connexion...";
+            try {
+                let response = await fetch('/api/connect');
+                let data = await response.json();
+                
+                if (response.ok) {
+                    statusDiv.innerText = "✅ Connecté à l'AGV";
+                    
+                    // Ajustement des couleurs pour montrer que la liaison est active
+                    let selectElement = document.getElementById('global-mode-select');
+                    if (selectElement.value === "1") {
+                        selectElement.style.backgroundColor = "#1e3a8a"; // Bleu actif
+                        selectElement.style.color = "#93c5fd";
+                        selectElement.style.border = "2px solid #2563eb";
+                    }
+                } else {
+                    statusDiv.innerText = data.status || "❌ Échec de la connexion";
+                }
+            } catch (e) {
+                statusDiv.innerText = "❌ Erreur serveur Web";
+            }
         }
 
         async function refreshData() {
-            let response = await fetch('/api/data');
-            let data = await response.json();
-            if(data.error) { alert(data.error); return; }
-            document.getElementById('current_val').innerText = data.current.toFixed(2) + " A";
-            document.getElementById('temp_val').innerText = `PCB: ${data.temperatures.ntc_pcb_1}°C | Châssis (TMP126): ${data.temperatures.ambient_chassis}°C`;
+            try {
+                let response = await fetch('/api/data');
+                let data = await response.json();
+                
+                if(data.error) { 
+                    alert(data.error); 
+                    return; 
+                }
+                
+                // 1. Mise à jour des valeurs numériques
+                document.getElementById('current_val').innerText = data.current.toFixed(2) + " A";
+                document.getElementById('temp_val').innerText = `PCB: ${data.temperatures.ntc_pcb_1}°C | Châssis (TMP126): ${data.temperatures.ambient_chassis}°C`;
+
+                // 2. Synchronisation automatique de l'IHM si le mode a changé tout seul (ex: Alarme)
+                let selectElement = document.getElementById('global-mode-select');
+                if (data.mode === "Fonctionnement nominal") {
+                    selectElement.value = "0";
+                    selectElement.style.backgroundColor = "#166534"; // Vert
+                    selectElement.style.color = "#bbf7d0";
+                    selectElement.style.border = "2px solid #22c55e";
+                } else if (data.mode === "Maintenance") {
+                    selectElement.value = "1";
+                    selectElement.style.backgroundColor = "#1e3a8a"; // Bleu
+                    selectElement.style.color = "#93c5fd";
+                    selectElement.style.border = "2px solid #2563eb";
+                } else if (data.mode === "Alarme") {
+                    selectElement.style.backgroundColor = "#991b1b"; // Rouge Alarme
+                    selectElement.style.color = "#fee2e2";
+                    selectElement.style.border = "2px solid #ef4444";
+                }
+
+            } catch (e) {
+                alert("Erreur de connexion à l'API locale.");
+            }
+        }
+
+        async function changeAGVMode() {
+            let selectElement = document.getElementById('global-mode-select');
+            let selectedMode = selectElement.value;
+
+            // Changement visuel immédiat de la couleur selon le choix utilisateur
+            if (selectedMode === "0") {
+                selectElement.style.backgroundColor = "#166534"; // Vert
+                selectElement.style.color = "#bbf7d0";
+                selectElement.style.border = "2px solid #22c55e";
+            } else {
+                selectElement.style.backgroundColor = "#1e3a8a"; // Bleu
+                selectElement.style.color = "#93c5fd";
+                selectElement.style.border = "2px solid #2563eb";
+            }
+
+            try {
+                let response = await fetch(`/api/change_mode?mode=${selectedMode}`);
+                let data = await response.json();
+                
+                if (data.error) {
+                    // Si pas connecté, l'API Flask renvoie l'erreur et on l'affiche proprement
+                    alert("⚠️ " + data.error);
+                }
+            } catch (error) {
+                alert("❌ Erreur de communication avec le serveur.");
+            }
         }
     </script>
 </body>

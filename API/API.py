@@ -13,6 +13,7 @@ CHAR_TEMPERATURES_UUID   = "c2c95358-0001-447a-9cb8-b0bf0a133401" # Lecture / No
 # Service Configuration / Maintenance
 SERVICE_CONFIG_UUID     = "e320d750-2bc4-41d1-8d2b-58d7dc5b49cb"
 CHAR_ALARM_THRESHOLDS_UUID = "d195e634-1102-4bf5-bc65-02b80a133402" # Lecture / Ecriture
+CHAR_MODE_UUID = "d205e634-1102-4bf5-bc65-02b80a133403"
 
 
 class AgvMonitoringAPI:
@@ -52,7 +53,8 @@ class AgvMonitoringAPI:
     # ----------------------------------------------------
     async def read_current(self) -> float:
         """Lit le courant de la batterie 36V transmis par l'INA237."""
-        if not self.client.is_connected: return 0.0
+        if not self.client.is_connected:
+            return 0.0
         raw_data = await self.client.read_gatt_char(CHAR_CURRENT_UUID)
         # Supposons que l'ESP32 envoie un float (4 octets)
         current = struct.unpack('f', raw_data)[0]
@@ -60,7 +62,8 @@ class AgvMonitoringAPI:
 
     async def read_temperatures(self) -> dict:
         """Lit les données thermiques (2 NTC internes + 1 TMP126 ambiante)."""
-        if not self.client.is_connected: return {}
+        if not self.client.is_connected:
+            return {}
         raw_data = await self.client.read_gatt_char(CHAR_TEMPERATURES_UUID)
         # Supposons que l'ESP32 envoie 3 floats : ntc1, ntc2, temp_amb (12 octets)
         ntc1, ntc2, temp_amb = struct.unpack('fff', raw_data)
@@ -69,13 +72,26 @@ class AgvMonitoringAPI:
             "ntc_pcb_2": ntc2,
             "ambient_chassis": temp_amb
         }
+    
+    async def read_mode(self) -> int:
+        """Lit le mode : 0=Nominal, 1=Maintenance, 2=Alarme."""
+        if not self.client.is_connected:
+            return 1
+        try:
+            raw_data = await self.client.read_gatt_char(CHAR_MODE_UUID)
+            # Lecture d'un entier sur 1 octet (B = unsigned char)
+            return struct.unpack('B', raw_data)[0]
+        except Exception:
+            # Sécurité : Si l'UUID n'est pas encore codé sur l'ESP32, on force "Maintenance"
+            return 1
 
     # ----------------------------------------------------
     # FONCTIONS D'ÉCRITURE (EXF-23)
     # ----------------------------------------------------
     async def update_alarm_thresholds(self, current_max: float, temp_max: float):
         """Permet au technicien d'ajuster les seuils d'alarme depuis sa tablette."""
-        if not self.client.is_connected: return
+        if not self.client.is_connected:
+            return
         print(f"💾 Envoi des nouveaux seuils : Courant Max = {current_max}A, Temp Max = {temp_max}°C")
         # Prépare les données au format binaire (2 floats = 8 octets)
         payload = struct.pack('ff', current_max, temp_max)
@@ -94,6 +110,20 @@ class AgvMonitoringAPI:
         await self.client.start_notify(CHAR_CURRENT_UUID, self._current_notification_handler)
         print("🔔 Notifications de courant activées.")
 
+    # ------------------------------------------------------------
+    # DEMANDE DE CHANGEMENT DE MODE DE FONCTIONEMENT DE LA CARTE
+    # ------------------------------------------------------------
+
+    async def write_mode(self, mode_code: int):
+     """Envoie l'ordre à l'ESP32 de changer son mode (0 = Nominal, 1 = Maintenance)."""
+     if not self.client or not self.client.is_connected: 
+         raise Exception("Carte non connectée en Bluetooth")
+
+     print(f"⚙️ Envoi de la demande de mode : {mode_code}")
+     # Convertit l'entier en 1 octet (format 'B' pour un entier non signé de 8 bits)
+     payload = struct.pack('B', mode_code)
+     await self.client.write_gatt_char(CHAR_MODE_UUID, payload, response=True)
+     print("✅ Ordre de changement de mode transmis avec succès.")
 
 # ==========================================
 # EXEMPLE DE SCÉNARIO D'UTILISATION (MAIN)
