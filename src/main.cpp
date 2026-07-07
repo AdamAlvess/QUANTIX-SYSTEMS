@@ -2,7 +2,7 @@
 #include "Middle_level/temperature/INA237/I2C_Init.h"
 #include "Middle_level/temperature/INA237/INA237_Temp.h"
 #include "Middle_level/temperature/INA237/I2C_Error.h"
-#include "Middle_level/mikrobus/MikroBus_LoRa.h"
+#include "Middle_level/gpio/MikroBus.h"
 
 static uint8_t  s_errCount  = 0;
 static uint32_t s_lastMs    = 0;
