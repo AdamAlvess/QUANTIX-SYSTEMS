@@ -1,1 +1,0 @@
-/*Récupération de la donnée de température interne et traitement de la donnée*/
