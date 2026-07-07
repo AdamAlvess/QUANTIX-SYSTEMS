@@ -8,6 +8,10 @@
 // Conversion température → tension (mV)
 // Formule : V(mV) = Temp(°C) * 10.0
 // Ex : 25°C → 250 mV
-#define TEMP_TO_VOLTAGE_FACTOR 10.0f
+#define TEMP_MIN_C      -40.0f
+#define TEMP_MAX_C      125.0f
+#define VOLTAGE_MAX_MV   40.96f
+
+#define TEMP_TO_VOLTAGE_FACTOR  (VOLTAGE_MAX_MV / TEMP_MAX_C)  // = 0.32768 mV/°C
 
 float INA237_ReadVoltageFromTemp();

@@ -1,6 +1,8 @@
 #include "setup.h"
 #include "Middle_level/composant_interne/led.h"
 #include "Middle_level/temperature/INA237/I2C_Init.h"
+#include "Middle_level/temperature/INA237/INA237_Current.h"
+#include "Middle_level/temperature/INA237/I2C_Error.h"
 
 // Définition des broches I2C
 #define PIN_I2C_SDA 21
@@ -60,6 +62,20 @@ bool system_init() {
         success = false;
     } else {
         Serial.println("[ OK ] Sondes CTN opérationnelles.");
+    }
+
+    Serial.println("\n=== ESP32 – INA237 Courant  ===\n");
+
+    
+    // Init I2C
+    if (!I2C_Init(SDA_PIN, SCL_PIN)) {
+        Serial.println("[MAIN] Echec init I2C");
+        return;
+    }
+
+    // Init INA237 mesure courant
+    if (!INA237_Current_Init()) {
+        Serial.println("[MAIN] Echec init INA237 courant");
     }
 
     // ─── VERDICT FINAL ───

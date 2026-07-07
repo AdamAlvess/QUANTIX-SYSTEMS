@@ -2,9 +2,16 @@
 #include "Middle_level/init_var/setup.h"
 #include "Middle_level/composant_interne/led.h"
 #include "Middle_level/temperature/INA237/INA237_Temp.h"
+#include "Middle_level/temperature/INA237/INA237_Current.h"
+#include "Middle_level/temperature/INA237/I2C_Error.h"
 #include "Middle_level/protocol_com/ble/donnee_api.h"
+#define READ_INTERVAL_MS 1000
+
+static uint8_t  s_errCount = 0;
+static uint32_t s_lastMs   = 0;
 
 bool systemOk = false;
+
 
 void setup() {
     Serial.begin(115200);
@@ -13,17 +20,45 @@ void setup() {
     // Appel unique de l'auto-test défini dans setup.cpp
     systemOk = system_init();
 
+    
+
     // Initialisation du BLE au démarrage de l'ESP32
     DonneeApi::init("AGV_MONITOR_ESP32");
 }
 
+
 void loop() {
+
     if (!systemOk) {
         // Mode dégradé : Clignotement d'alerte rouge
         maLedrouge.allumer(); delay(200);
         maLedrouge.eteindre(); delay(200);
         return; 
+
+    delay(200);
+
+  }
+
+    if (millis() - s_lastMs < READ_INTERVAL_MS) return;
+    s_lastMs = millis();
+
+    // ── Mesure courant ────────────────────────────────────
+    INA237Measure measure;
+    if (INA237_Current_Read(measure)) {
+        s_errCount = 0;
+        INA237_Current_Print(measure);
+    } else {
+        s_errCount++;
+        Serial.printf("[MAIN] Erreur I2C #%d\n", s_errCount);
+        if (s_errCount >= 5) {
+            Serial.println("[MAIN] Recovery...");
+            I2C_Recover(SDA_PIN, SCL_PIN);
+            INA237_Current_Init();
+            s_errCount = 0;
+        }
+        return;
     }
+
 
         // ─── 3. LECTURE CTN ───
     float temp_ctn1 = sondePcb1.obtenirTemperature();
@@ -52,10 +87,8 @@ void loop() {
 
     Serial.println("═══════════════════════════════════════════");
     delay(2000); 
-}
+};
 
-#include <Arduino.h>
-// Inclusion précise en fonction de votre arborescence :
 
 
 
