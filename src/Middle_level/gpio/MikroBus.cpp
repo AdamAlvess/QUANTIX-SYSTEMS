@@ -1,157 +1,78 @@
 #include "MikroBus.h"
 
-// UART dédié au RN2483
-static HardwareSerial LoRaSerial(LORA_UART_NUM);
-
-// ─────────────────────────────────────────────
-//  Envoi d'une commande AT et lecture réponse
-// ─────────────────────────────────────────────
-static String sendCommand(const String &cmd, uint32_t timeout = LORA_CMD_TIMEOUT_MS) {
-    LoRaSerial.println(cmd);
-    Serial.printf("[LoRa] >> %s\n", cmd.c_str());
-
-    uint32_t start = millis();
-    String response = "";
-
-    while (millis() - start < timeout) {
-        if (LoRaSerial.available()) {
-            char c = LoRaSerial.read();
-            response += c;
-            if (response.endsWith("\r\n")) break;
-        }
-    }
-
-    response.trim();
-    Serial.printf("[LoRa] << %s\n", response.c_str());
-    return response;
-}
-
 // ═══════════════════════════════════════════════════════════
-//  BLOC 1 — Initialisation UART + Reset RN2483
+//  Configuration des GPIO du connecteur MikroBus
+//  selon le module branché
 // ═══════════════════════════════════════════════════════════
-bool LoRa_Init() {
-    Serial.println("[LoRa] Initialisation MikroBus RN2483...");
+bool MikroBus_InitGPIO(MikroBusModule module) {
+    Serial.println("[MikroBus] Configuration des GPIO...");
 
-    // Démarrage UART
-    LoRaSerial.begin(LORA_UART_BAUD, SERIAL_8N1, LORA_RX_PIN, LORA_TX_PIN);
-    delay(100);
+    // ── Pins communs à tous les modules ──────────────────
+    pinMode(MIKROBUS_RST_PIN, OUTPUT);
+    digitalWrite(MIKROBUS_RST_PIN, HIGH);   // Pas en reset
 
-    if (!LoRaSerial) {
-        Serial.println("[LoRa] Erreur démarrage UART");
-        return false;
+    pinMode(MIKROBUS_INT_PIN, INPUT);        // Interruption en entrée
+    pinMode(MIKROBUS_AN_PIN,  INPUT);        // Analogique en entrée
+
+    // ── Pins spécifiques selon le module ─────────────────
+    switch (module) {
+
+        case MikroBusModule::LORA_RN2483:
+            // RN2483 utilise UART → TX/RX configurés par HardwareSerial
+            // CS, SPI, I2C non utilisés → mis en haute impédance
+            pinMode(MIKROBUS_CS_PIN,   INPUT);
+            pinMode(MIKROBUS_SCK_PIN,  INPUT);
+            pinMode(MIKROBUS_MISO_PIN, INPUT);
+            pinMode(MIKROBUS_MOSI_PIN, INPUT);
+            pinMode(MIKROBUS_PWM_PIN,  INPUT);
+            Serial.println("[MikroBus] Mode UART (LoRa RN2483) configuré");
+            break;
+
+        case MikroBusModule::NONE:
+        default:
+            // Aucun module → tous les pins en haute impédance
+            pinMode(MIKROBUS_CS_PIN,   INPUT);
+            pinMode(MIKROBUS_SCK_PIN,  INPUT);
+            pinMode(MIKROBUS_MISO_PIN, INPUT);
+            pinMode(MIKROBUS_MOSI_PIN, INPUT);
+            pinMode(MIKROBUS_PWM_PIN,  INPUT);
+            Serial.println("[MikroBus] Aucun module – GPIO en haute impédance");
+            break;
     }
 
-    // Reset matériel via pin RST (actif bas)
-    pinMode(LORA_RST_PIN, OUTPUT);
-    digitalWrite(LORA_RST_PIN, LOW);
-    delay(100);
-    digitalWrite(LORA_RST_PIN, HIGH);
-    delay(500);  // Attente boot RN2483
-
-    // Vérification réponse boot ("RN2483 X.X.X ...")
-    String boot = "";
-    uint32_t start = millis();
-    while (millis() - start < 2000) {
-        if (LoRaSerial.available()) {
-            boot += (char)LoRaSerial.read();
-            if (boot.endsWith("\r\n")) break;
-        }
-    }
-    boot.trim();
-    Serial.printf("[LoRa] Boot : %s\n", boot.c_str());
-
-    if (!boot.startsWith("RN2483")) {
-        Serial.println("[LoRa] Module RN2483 non détecté");
-        return false;
-    }
-
-    // Réinitialisation MAC
-    sendCommand("mac reset 868");
-
-    Serial.println("[LoRa] Init OK");
+    MikroBus_PrintConfig();
     return true;
 }
 
-// ═══════════════════════════════════════════════════════════
-//  BLOC 2 — Connexion LoRaWAN OTAA
-// ═══════════════════════════════════════════════════════════
-LoRaStatus LoRa_Join() {
-    Serial.println("[LoRa] Tentative de join OTAA...");
-
-    // Configuration des credentials
-    String r;
-    r = sendCommand("mac set deveui "  + String(LORA_DEV_EUI));
-    if (r != "ok") return LoRaStatus::ERR_JOIN;
-
-    r = sendCommand("mac set appeui "  + String(LORA_APP_EUI));
-    if (r != "ok") return LoRaStatus::ERR_JOIN;
-
-    r = sendCommand("mac set appkey "  + String(LORA_APP_KEY));
-    if (r != "ok") return LoRaStatus::ERR_JOIN;
-
-    // Paramètres réseau
-    sendCommand("mac set adr on");
-    sendCommand("mac set dr 0");        // DR0 = portée maximale
-
-    // Lancement du join
-    r = sendCommand("mac join otaa", 10000);
-    if (r != "accepted") {
-        Serial.printf("[LoRa] Join refusé : %s\n", r.c_str());
-        return LoRaStatus::ERR_JOIN;
-    }
-
-    Serial.println("[LoRa] Join OTAA réussi !");
-    return LoRaStatus::OK;
-}
-
-// ═══════════════════════════════════════════════════════════
-//  BLOC 3 — Envoi des données (tension + température)
-//  Payload : 4 octets
-//    [0-1] tension_mV × 100 (int16)
-//    [2-3] temp_C    × 100 (int16)
-// ═══════════════════════════════════════════════════════════
-LoRaStatus LoRa_SendData(float voltage_mV, float temp_C) {
-
-    // Encodage en hex (big-endian)
-    int16_t v = (int16_t)(voltage_mV * 100.0f);
-    int16_t t = (int16_t)(temp_C    * 100.0f);
-
-    char payload[9];
-    snprintf(payload, sizeof(payload), "%04X%04X",
-             (uint16_t)v, (uint16_t)t);
-
-    Serial.printf("[LoRa] Payload : %s  (V=%.2fmV T=%.2f°C)\n",
-                  payload, voltage_mV, temp_C);
-
-    // Envoi sur le port 1, non confirmé
-    String cmd = "mac tx uncnf 1 " + String(payload);
-    String r   = sendCommand(cmd, 5000);
-
-    if (r == "mac_tx_ok") {
-        Serial.println("[LoRa] Envoi OK");
-        return LoRaStatus::OK;
-    }
-
-    if (r.startsWith("mac_rx")) {
-        Serial.printf("[LoRa] Envoi OK + downlink reçu : %s\n", r.c_str());
-        return LoRaStatus::OK;
-    }
-
-    Serial.printf("[LoRa] Erreur envoi : %s\n", r.c_str());
-    return LoRaStatus::ERR_SEND;
+// ─────────────────────────────────────────────
+//  Reset matériel du module branché
+// ─────────────────────────────────────────────
+void MikroBus_Reset() {
+    Serial.println("[MikroBus] Reset module...");
+    digitalWrite(MIKROBUS_RST_PIN, LOW);
+    delay(100);
+    digitalWrite(MIKROBUS_RST_PIN, HIGH);
+    delay(500);
+    Serial.println("[MikroBus] Reset terminé");
 }
 
 // ─────────────────────────────────────────────
-//  Messages d'erreur lisibles
+//  Affichage de la configuration courante
 // ─────────────────────────────────────────────
-const char* LoRa_GetStatusStr(LoRaStatus s) {
-    switch (s) {
-        case LoRaStatus::OK:          return "OK";
-        case LoRaStatus::ERR_UART:    return "Erreur UART";
-        case LoRaStatus::ERR_RESET:   return "Erreur reset module";
-        case LoRaStatus::ERR_JOIN:    return "Join LoRaWAN échoué";
-        case LoRaStatus::ERR_SEND:    return "Envoi données échoué";
-        case LoRaStatus::ERR_TIMEOUT: return "Timeout";
-        default:                      return "Erreur inconnue";
-    }
+void MikroBus_PrintConfig() {
+    Serial.println("┌─────────────────────────────────┐");
+    Serial.println("│     MikroBus GPIO Config         │");
+    Serial.printf ("│ AN   → GPIO%-2d  [INPUT]           │\n", MIKROBUS_AN_PIN);
+    Serial.printf ("│ RST  → GPIO%-2d  [OUTPUT]          │\n", MIKROBUS_RST_PIN);
+    Serial.printf ("│ CS   → GPIO%-2d  [INPUT]           │\n", MIKROBUS_CS_PIN);
+    Serial.printf ("│ SCK  → GPIO%-2d  [INPUT]           │\n", MIKROBUS_SCK_PIN);
+    Serial.printf ("│ MISO → GPIO%-2d  [INPUT]           │\n", MIKROBUS_MISO_PIN);
+    Serial.printf ("│ MOSI → GPIO%-2d  [INPUT]           │\n", MIKROBUS_MOSI_PIN);
+    Serial.printf ("│ PWM  → GPIO%-2d  [INPUT]           │\n", MIKROBUS_PWM_PIN);
+    Serial.printf ("│ INT  → GPIO%-2d  [INPUT]           │\n", MIKROBUS_INT_PIN);
+    Serial.printf ("│ RX   → GPIO%-2d  [UART]            │\n", MIKROBUS_RX_PIN);
+    Serial.printf ("│ TX   → GPIO%-2d  [UART]            │\n", MIKROBUS_TX_PIN);
+    Serial.printf ("│ SCL  → GPIO%-2d  [I2C]             │\n", MIKROBUS_SCL_PIN);
+    Serial.printf ("│ SDA  → GPIO%-2d  [I2C]             │\n", MIKROBUS_SDA_PIN);
+    Serial.println("└─────────────────────────────────┘");
 }
