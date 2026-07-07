@@ -35,6 +35,5 @@ float INA237_ReadVoltageFromTemp() {
 
     Serial.printf("[INA237_Temp] Temp : %.2f °C  →  Tension : %.2f mV\n",
                   temp_C, voltage_mV);
-
     return voltage_mV;
 }
